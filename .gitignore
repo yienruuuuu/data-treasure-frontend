@@ -1,5 +1,9 @@
 .gradle
 build/
+dist/
+node_modules/
+output/
+.codex/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/

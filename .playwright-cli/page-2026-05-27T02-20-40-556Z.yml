@@ -1,0 +1,126 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]: POLYMARKET
+    - navigation "主導覽" [ref=e6]:
+      - button "資料" [ref=e7] [cursor=pointer]
+    - button "使用者狀態" [ref=e8] [cursor=pointer]
+  - generic [ref=e10]:
+    - complementary "側邊欄" [ref=e11]:
+      - generic [ref=e12]:
+        - generic [ref=e13]:
+          - generic [ref=e14]: ⌕
+          - textbox "搜尋人物或指標" [ref=e15]
+          - button "‹" [expanded] [ref=e16] [cursor=pointer]
+        - generic [ref=e17]:
+          - heading "#Tweet 人物資料源" [level=2] [ref=e18]
+          - 'button "Elon Musk #tweet 資訊" [ref=e20] [cursor=pointer]':
+            - generic [ref=e21]: Elon Musk
+            - generic [ref=e22]: "#tweet 資訊"
+        - generic [ref=e24]:
+          - heading "市場指標" [level=2] [ref=e25]
+          - generic [ref=e26]:
+            - button "MACD 指標" [ref=e27] [cursor=pointer]:
+              - generic [ref=e28]: MACD 指標
+            - button "RSI 熱力圖" [ref=e29] [cursor=pointer]:
+              - generic [ref=e30]: RSI 熱力圖
+            - button "Escape Index" [ref=e31] [cursor=pointer]:
+              - generic [ref=e32]: Escape Index
+            - button "CBBI 指數" [ref=e33] [cursor=pointer]:
+              - generic [ref=e34]: CBBI 指數
+      - generic "時間設定" [ref=e35]:
+        - article [ref=e36]:
+          - generic [ref=e37]:
+            - heading "美東時間" [level=2] [ref=e38]
+            - generic [ref=e39]: 即時更新
+          - strong [ref=e41]: 2026/05/26 22:20:39
+          - generic [ref=e42]:
+            - button "指定時間" [ref=e43] [cursor=pointer]
+            - button "NOW" [ref=e44] [cursor=pointer]
+        - article [ref=e45]:
+          - heading "自選時區" [level=2] [ref=e46]
+          - generic [ref=e47]:
+            - generic [ref=e48]: 選擇時區
+            - combobox "選擇時區" [ref=e49]:
+              - option "Asia/Taipei" [selected]
+              - option "UTC"
+              - option "America/New_York"
+              - option "Europe/London"
+              - option "Asia/Tokyo"
+          - strong [ref=e50]: 2026/05/27 10:20:39
+    - main [ref=e51]:
+      - generic [ref=e52]:
+        - generic [ref=e53]:
+          - heading "X 活動洞察" [level=1] [ref=e54]
+          - paragraph [ref=e55]: 追蹤 Elon Musk 在指定時間區間內的發文量與累積趨勢。
+        - generic "目前資料源" [ref=e56]:
+          - generic [ref=e57]: 目前資料源
+          - strong [ref=e58]: Tweet / Elon Musk
+      - region "時間篩選" [ref=e59]:
+        - generic [ref=e60]:
+          - button "自訂區間" [pressed] [ref=e61] [cursor=pointer]
+          - button "過去24h" [ref=e62] [cursor=pointer]
+          - button "過去7d" [ref=e63] [cursor=pointer]
+          - button "過去30d" [ref=e64] [cursor=pointer]
+          - button "今天" [ref=e65] [cursor=pointer]
+        - generic [ref=e66]:
+          - button "5/23 12PM" [ref=e67] [cursor=pointer]
+          - generic [ref=e68]: →
+          - button "5/24 9AM" [ref=e69] [cursor=pointer]
+          - button "套用" [ref=e70] [cursor=pointer]
+      - generic [ref=e71]:
+        - generic [ref=e72]:
+          - generic [ref=e73]:
+            - heading "發文量與累積趨勢" [level=2] [ref=e74]
+            - paragraph [ref=e75]: 柱狀代表單日發文量，折線代表累積發文量
+          - generic [ref=e76]:
+            - generic [ref=e77]: 當日發文量
+            - generic [ref=e79]: 累積發文量
+        - generic [ref=e81]:
+          - img "當日發文量與累積發文量趨勢圖" [ref=e82]
+          - table "發文量與累積趨勢資料" [ref=e85]:
+            - caption [ref=e86]: 發文量與累積趨勢資料
+            - rowgroup [ref=e87]:
+              - row "時間 當日發文量 累積發文量" [ref=e88]:
+                - columnheader "時間" [ref=e89]
+                - columnheader "當日發文量" [ref=e90]
+                - columnheader "累積發文量" [ref=e91]
+            - rowgroup [ref=e92]:
+              - row "5/23 12PM 35 700" [ref=e93]:
+                - cell "5/23 12PM" [ref=e94]
+                - cell "35" [ref=e95]
+                - cell "700" [ref=e96]
+              - row "5/23 3PM 62 2000" [ref=e97]:
+                - cell "5/23 3PM" [ref=e98]
+                - cell "62" [ref=e99]
+                - cell "2000" [ref=e100]
+              - row "5/23 6PM 24 3500" [ref=e101]:
+                - cell "5/23 6PM" [ref=e102]
+                - cell "24" [ref=e103]
+                - cell "3500" [ref=e104]
+              - row "5/23 9PM 20 4600" [ref=e105]:
+                - cell "5/23 9PM" [ref=e106]
+                - cell "20" [ref=e107]
+                - cell "4600" [ref=e108]
+              - row "5/24 12AM 225 6600" [ref=e109]:
+                - cell "5/24 12AM" [ref=e110]
+                - cell "225" [ref=e111]
+                - cell "6600" [ref=e112]
+              - row "5/24 3AM 65 7800" [ref=e113]:
+                - cell "5/24 3AM" [ref=e114]
+                - cell "65" [ref=e115]
+                - cell "7800" [ref=e116]
+              - row "5/24 6AM 28 9000" [ref=e117]:
+                - cell "5/24 6AM" [ref=e118]
+                - cell "28" [ref=e119]
+                - cell "9000" [ref=e120]
+              - row "5/24 9AM 150 9600" [ref=e121]:
+                - cell "5/24 9AM" [ref=e122]
+                - cell "150" [ref=e123]
+                - cell "9600" [ref=e124]
+      - generic [ref=e125]:
+        - article [ref=e126]:
+          - heading "趨勢摘要" [level=3] [ref=e127]
+          - paragraph [ref=e128]: 5/24 12AM 出現發文高峰，累積曲線在凌晨後維持穩定上升。
+        - article [ref=e129]:
+          - heading "前端落地提示" [level=3] [ref=e130]
+          - paragraph [ref=e131]: 建議拆成 Toolbar、ChartCard、SidebarNav 等元件。
