@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { RangePreset, SidebarState } from "./types";
 import { getActivityTrend, mockActivity } from "./api/polyTrackerClient";
 import {
@@ -112,7 +112,7 @@ export function App() {
 function TopNav() {
   return (
     <header className="top-nav">
-      <div className="brand">POLYMARKET</div>
+      <div className="brand">POLY RAVEN</div>
       <nav aria-label="主導覽">
         <button type="button" className="top-nav-item is-active">資料</button>
       </nav>
@@ -244,6 +244,8 @@ function TimePanel({
   onReturnNow,
   onTimezoneChange
 }: TimePanelProps) {
+  const easternTimeInputRef = useRef<HTMLInputElement | null>(null);
+
   return (
     <div className="time-panel" aria-label="時間設定">
       <article className="time-card eastern-time">
@@ -262,12 +264,30 @@ function TimePanel({
           <div className="time-picker">
             <label>
               <span>指定美東時間</span>
-              <input
-                type="datetime-local"
-                step="1"
-                value={draftTime}
-                onChange={(event) => onDraftTimeChange(event.target.value)}
-              />
+              <div className="time-input-wrap">
+                <input
+                  ref={easternTimeInputRef}
+                  type="datetime-local"
+                  step="1"
+                  value={draftTime}
+                  onChange={(event) => onDraftTimeChange(event.target.value)}
+                />
+                <button
+                  type="button"
+                  className="time-picker-icon"
+                  aria-label="開啟日期時間選擇器"
+                  onClick={() => {
+                    easternTimeInputRef.current?.showPicker();
+                    easternTimeInputRef.current?.focus();
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M5 4h14v16H5z" />
+                    <path d="M8 2v4M16 2v4M5 8h14" />
+                    <path d="M8 11h3v3H8zM13 11h3v3h-3zM8 16h3v2H8zM13 16h3v2h-3z" />
+                  </svg>
+                </button>
+              </div>
             </label>
             <button type="button" onClick={onApplyDraft}>套用</button>
           </div>

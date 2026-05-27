@@ -95,7 +95,7 @@ button {
 }
 
 .brand {
-  width: 142px;
+  width: 182px;
   color: var(--bt-text-primary);
   font-size: 28px;
   font-weight: 800;
@@ -398,21 +398,55 @@ button {
   font-weight: 800;
 }
 
+.time-input-wrap {
+  position: relative;
+}
+
 .time-picker input {
   height: 42px;
-  padding: 0 12px;
+  padding: 0 48px 0 12px;
   color-scheme: dark;
 }
 
 .time-picker input::-webkit-calendar-picker-indicator {
-  width: 24px;
-  height: 24px;
-  margin-left: 8px;
+  opacity: 0;
+}
+
+.time-picker-icon {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  padding: 0;
+  transform: translateY(-50%);
   border: 1px solid var(--bt-border);
-  background-color: var(--bt-acid);
-  cursor: pointer;
-  filter: invert(1);
-  opacity: 1;
+  border-radius: 0;
+  background: #050606;
+  color: var(--bt-acid);
+}
+
+.time-picker-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+}
+
+.time-picker-icon svg path:nth-child(3) {
+  fill: currentColor;
+  stroke: none;
+}
+
+.time-picker-icon:hover,
+.time-picker-icon:focus-visible {
+  border-color: var(--bt-acid);
+  outline: 0;
 }
 
 .custom-zone {
