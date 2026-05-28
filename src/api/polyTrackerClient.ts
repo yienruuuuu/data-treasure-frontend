@@ -1,5 +1,14 @@
 import type { PolyTrackerActivityResponse } from "../types";
 
+const TRACKED_PERSON = "ELON_MUSK";
+const ACTIVITY_TREND_ENDPOINT = `/api/xtracker/persons/tracked/${TRACKED_PERSON}/posts/activity-trend`;
+
+export type ActivityTrendRequest = {
+  startAt?: string;
+  endAt?: string;
+  bucket?: "hour" | "day";
+};
+
 export const mockActivity: PolyTrackerActivityResponse = {
   source: {
     platform: "X",
@@ -36,6 +45,27 @@ export const mockActivity: PolyTrackerActivityResponse = {
   }
 };
 
-export async function getActivityTrend(): Promise<PolyTrackerActivityResponse> {
-  return mockActivity;
+export async function getActivityTrend(request: ActivityTrendRequest = {}): Promise<PolyTrackerActivityResponse> {
+  const url = new URL(ACTIVITY_TREND_ENDPOINT, window.location.origin);
+  if (request.startAt) {
+    url.searchParams.set("startAt", request.startAt);
+  }
+  if (request.endAt) {
+    url.searchParams.set("endAt", request.endAt);
+  }
+  if (request.bucket) {
+    url.searchParams.set("bucket", request.bucket);
+  }
+
+  const response = await fetch(url, {
+    headers: {
+      Accept: "application/json"
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`Activity trend request failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<PolyTrackerActivityResponse>;
 }

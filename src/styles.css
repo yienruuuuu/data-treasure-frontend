@@ -23,6 +23,7 @@
   background: var(--bt-bg-app);
   font-family: "Source Sans 3", "Source Sans Pro", "Segoe UI", system-ui, sans-serif;
   font-synthesis: none;
+
   text-rendering: geometricPrecision;
 }
 
@@ -581,12 +582,38 @@ button {
 }
 
 .date-field {
+  display: flex;
+  align-items: center;
   min-width: 124px;
-  padding: 0 16px;
+  padding: 0;
 }
 
 .date-field.compact {
   min-width: 118px;
+}
+
+.date-field input {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  color: var(--bt-text-primary);
+  color-scheme: dark;
+  font-size: 15px;
+  font-weight: 800;
+  outline: 0;
+}
+
+.date-field input::-webkit-calendar-picker-indicator {
+  opacity: 0.7;
+  cursor: pointer;
+  filter: invert(1);
+}
+
+.date-field:focus-within {
+  border-color: var(--bt-acid);
 }
 
 .date-arrow {
@@ -669,6 +696,29 @@ button {
   background: var(--bt-blue);
 }
 
+.data-state {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  margin-top: 14px;
+  padding: 0 12px;
+  border: 1px solid var(--bt-border-dim);
+  background: #050606;
+  color: var(--bt-text-muted);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.data-state.ready {
+  border-color: rgba(182, 255, 46, 0.55);
+  color: var(--bt-acid);
+}
+
+.data-state.error {
+  border-color: var(--bt-amber);
+  color: var(--bt-amber);
+}
+
 .chart-wrap {
   height: 560px;
   margin-top: -2px;
@@ -710,23 +760,8 @@ button {
   background: var(--bt-acid);
 }
 
-.tooltip-line {
-  position: relative;
-  width: 18px;
-  height: 3px;
-  border-radius: 0;
+.tooltip-dot.cumulative {
   background: var(--bt-blue);
-}
-
-.tooltip-line::after {
-  position: absolute;
-  top: -3px;
-  left: 6px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--bt-blue);
-  content: "";
 }
 
 .bottom-panels {

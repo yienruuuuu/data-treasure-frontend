@@ -48,6 +48,10 @@ export function ActivityTrendChart({ activity, labels }: ActivityTrendChartProps
 
     const daily = activity.series.map((point) => point.dailyCount);
     const cumulative = activity.series.map((point) => point.cumulativeCount);
+    const dailyScale = buildValueAxisScale(daily, 5, 4);
+    const cumulativeScale = buildValueAxisScale(cumulative, 8, 7);
+    const volumeLabel = activity.range.bucket === "day" ? "每日發文量" : "每小時發文量";
+    const volumeAxisLabel = activity.range.bucket === "day" ? "每日數量" : "每小時數量";
 
     const option: ChartOption = {
       backgroundColor: "transparent",
@@ -85,13 +89,13 @@ export function ActivityTrendChart({ activity, labels }: ActivityTrendChartProps
         formatter: (params) => {
           const entries = Array.isArray(params) ? params : [params];
           const first = entries[0] as { axisValue?: string };
-          const dailyPoint = entries.find((entry) => (entry as { seriesName?: string }).seriesName === "當日發文量") as { value?: number } | undefined;
+          const dailyPoint = entries.find((entry) => (entry as { seriesName?: string }).seriesName === volumeLabel) as { value?: number } | undefined;
           const cumulativePoint = entries.find((entry) => (entry as { seriesName?: string }).seriesName === "累積發文量") as { value?: number } | undefined;
           return `
             <div class="chart-tooltip">
               <strong>${first.axisValue ?? ""}</strong>
-              <span><i class="tooltip-dot daily"></i>當日發文量 ${dailyPoint?.value ?? 0}</span>
-              <span><i class="tooltip-line cumulative"></i>累積發文量 ${formatCompact(cumulativePoint?.value ?? 0)}</span>
+              <span><i class="tooltip-dot daily"></i>${volumeLabel} ${dailyPoint?.value ?? 0}</span>
+              <span><i class="tooltip-dot cumulative"></i>累積發文量 ${formatCompact(cumulativePoint?.value ?? 0)}</span>
             </div>
           `;
         }
@@ -115,10 +119,10 @@ export function ActivityTrendChart({ activity, labels }: ActivityTrendChartProps
       yAxis: [
         {
           type: "value",
-          name: "當日數量",
+          name: volumeAxisLabel,
           min: 0,
-          max: 300,
-          interval: 75,
+          max: dailyScale.max,
+          interval: dailyScale.interval,
           nameTextStyle: {
             color: "#18f6a4",
             fontSize: 16,
@@ -137,8 +141,8 @@ export function ActivityTrendChart({ activity, labels }: ActivityTrendChartProps
           type: "value",
           name: "累積數量",
           min: 0,
-          max: 12000,
-          interval: 3000,
+          max: cumulativeScale.max,
+          interval: cumulativeScale.interval,
           nameTextStyle: {
             color: "#2d7dff",
             fontSize: 16,
@@ -150,14 +154,14 @@ export function ActivityTrendChart({ activity, labels }: ActivityTrendChartProps
             color: "#2d7dff",
             fontSize: 16,
             fontWeight: 700,
-            formatter: (value: number) => (value === 0 ? "0" : `${value / 1000}K`)
+            formatter: (value: number) => formatCompact(value)
           },
           splitLine: { show: false }
         }
       ],
       series: [
         {
-          name: "當日發文量",
+          name: volumeLabel,
           type: "bar",
           data: daily,
           barWidth: 22,
@@ -192,13 +196,13 @@ export function ActivityTrendChart({ activity, labels }: ActivityTrendChartProps
 
   return (
     <div className="chart-wrap">
-      <div ref={chartRef} className="trend-chart" role="img" aria-label="當日發文量與累積發文量趨勢圖" />
+      <div ref={chartRef} className="trend-chart" role="img" aria-label={`${activity.range.bucket === "day" ? "每日發文量" : "每小時發文量"}與累積發文量趨勢圖`} />
       <table className="sr-only">
         <caption>發文量與累積趨勢資料</caption>
         <thead>
           <tr>
             <th>時間</th>
-            <th>當日發文量</th>
+            <th>{activity.range.bucket === "day" ? "每日發文量" : "每小時發文量"}</th>
             <th>累積發文量</th>
           </tr>
         </thead>
@@ -221,4 +225,29 @@ function formatCompact(value: number) {
     return `${Number((value / 1000).toFixed(1))}K`;
   }
   return String(value);
+}
+
+function buildValueAxisScale(values: number[], targetLabelCount: number, minimumMax: number) {
+  const segmentCount = Math.max(1, targetLabelCount - 1);
+  const maxValue = Math.max(0, ...values);
+  const targetMax = Math.max(maxValue, minimumMax);
+  const interval = niceCeil(targetMax / segmentCount);
+
+  return {
+    max: interval * segmentCount,
+    interval
+  };
+}
+
+function niceCeil(value: number) {
+  if (value <= 0) {
+    return 1;
+  }
+
+  const exponent = Math.floor(Math.log10(value));
+  const magnitude = 10 ** exponent;
+  const normalized = value / magnitude;
+  const niceNormalized = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
+
+  return niceNormalized * magnitude;
 }

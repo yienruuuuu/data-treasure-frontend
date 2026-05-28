@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { RangePreset, SidebarState } from "./types";
-import { getActivityTrend, mockActivity } from "./api/polyTrackerClient";
+import type { PolyTrackerActivityResponse, RangePreset, SidebarState } from "./types";
+import { getActivityTrend } from "./api/polyTrackerClient";
 import {
   formatDateTime,
   formatDateTimeLocalValueInTimeZone,
@@ -18,10 +18,78 @@ const rangeTabs: Array<{ id: RangePreset; label: string }> = [
   { id: "today", label: "今天" }
 ];
 
+function rangeWindowForPreset(range: Exclude<RangePreset, "custom">, now = new Date()) {
+  const endAt = new Date(now);
+  const startAt = new Date(endAt);
+
+  if (range === "24h") {
+    startAt.setHours(startAt.getHours() - 24);
+    return { startAt, endAt, bucket: "hour" as const };
+  }
+
+  if (range === "7d") {
+    startAt.setDate(startAt.getDate() - 7);
+    return { startAt, endAt, bucket: "day" as const };
+  }
+
+  if (range === "30d") {
+    startAt.setDate(startAt.getDate() - 30);
+    return { startAt, endAt, bucket: "day" as const };
+  }
+
+  const easternDate = formatDateTimeLocalValueInTimeZone(endAt, "America/New_York").slice(0, 10);
+  const easternStart = parseDateTimeLocalInTimeZone(`${easternDate}T00:00:00`, "America/New_York");
+  return { startAt: easternStart, endAt, bucket: "hour" as const };
+}
+
+function defaultCustomWindow() {
+  const endAt = new Date();
+  const startAt = new Date(endAt);
+  startAt.setHours(startAt.getHours() - 24);
+
+  return {
+    startAt: formatDateTimeLocalValueInTimeZone(startAt, "America/New_York"),
+    endAt: formatDateTimeLocalValueInTimeZone(endAt, "America/New_York")
+  };
+}
+
+function activityTrendRequestForCustomRange(startAtValue: string, endAtValue: string) {
+  const startAt = parseDateTimeLocalInTimeZone(startAtValue, "America/New_York");
+  const endAt = parseDateTimeLocalInTimeZone(endAtValue, "America/New_York");
+
+  return {
+    startAt: startAt.toISOString(),
+    endAt: endAt.toISOString(),
+    bucket: "hour" as const
+  };
+}
+
+function formatRangeInputValueForPreset(range: Exclude<RangePreset, "custom">) {
+  const window = rangeWindowForPreset(range);
+
+  return {
+    startAt: formatDateTimeLocalValueInTimeZone(window.startAt, "America/New_York"),
+    endAt: formatDateTimeLocalValueInTimeZone(window.endAt, "America/New_York")
+  };
+}
+
+function activityTrendRequestForRange(range: RangePreset, customStartAt: string, customEndAt: string) {
+  if (range === "custom") {
+    return activityTrendRequestForCustomRange(customStartAt, customEndAt);
+  }
+
+  const window = rangeWindowForPreset(range);
+  return { startAt: window.startAt.toISOString(), endAt: window.endAt.toISOString(), bucket: window.bucket };
+}
+
 export function App() {
   const [sidebar, setSidebar] = useState<SidebarState>("expanded");
   const [selectedRange, setSelectedRange] = useState<RangePreset>("custom");
-  const [activity, setActivity] = useState(mockActivity);
+  const [customRange, setCustomRange] = useState(defaultCustomWindow);
+  const [appliedCustomRange, setAppliedCustomRange] = useState(defaultCustomWindow);
+  const [activity, setActivity] = useState<PolyTrackerActivityResponse | null>(null);
+  const [activityState, setActivityState] = useState<"loading" | "ready" | "error">("loading");
+  const [activityError, setActivityError] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
   const [easternOverride, setEasternOverride] = useState<Date | null>(null);
   const [timezone, setTimezone] = useState("Asia/Taipei");
@@ -32,15 +100,38 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    getActivityTrend().then(setActivity);
-  }, []);
+    let isActive = true;
+    setActivityState("loading");
+    setActivityError(null);
+
+    getActivityTrend(activityTrendRequestForRange(selectedRange, appliedCustomRange.startAt, appliedCustomRange.endAt))
+      .then((response) => {
+        if (!isActive) {
+          return;
+        }
+        setActivity(response);
+        setActivityState("ready");
+      })
+      .catch((error: unknown) => {
+        if (!isActive) {
+          return;
+        }
+        setActivityState("error");
+        setActivityError(error instanceof Error ? error.message : "Activity trend request failed");
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [selectedRange, appliedCustomRange]);
 
   const easternDisplayDate = easternOverride ?? now;
   const isEasternLive = easternOverride === null;
   const xLabels = useMemo(
-    () => activity.series.map((point) => formatEasternAxisLabel(new Date(point.bucketStartAt))),
-    [activity.series]
+    () => activity?.series.map((point) => formatEasternAxisLabel(new Date(point.bucketStartAt))) ?? [],
+    [activity]
   );
+  const volumeLabel = activity?.range.bucket === "day" ? "每日發文量" : "每小時發文量";
 
   return (
     <div className="app-shell">
@@ -64,7 +155,7 @@ export function App() {
             </div>
             <div className="source-chip" aria-label="目前資料源">
               <span>目前資料源</span>
-              <strong>{activity.source.sourceLabel} / {activity.source.displayName}</strong>
+              <strong>{activity ? `${activity.source.sourceLabel} / ${activity.source.displayName}` : "Tweet / ELON_MUSK"}</strong>
             </div>
           </section>
 
@@ -76,32 +167,71 @@ export function App() {
                   className={tab.id === selectedRange ? "is-active" : ""}
                   type="button"
                   aria-pressed={tab.id === selectedRange}
-                  onClick={() => setSelectedRange(tab.id)}
+                  onClick={() => {
+                    setSelectedRange(tab.id);
+                    if (tab.id !== "custom") {
+                      setCustomRange(formatRangeInputValueForPreset(tab.id));
+                    }
+                  }}
                 >
                   {tab.label}
                 </button>
               ))}
             </div>
-            <div className="date-controls">
-              <button type="button" className="date-field">5/23 12PM</button>
+            <form
+              className="date-controls"
+              onSubmit={(event) => {
+                event.preventDefault();
+                setSelectedRange("custom");
+                setAppliedCustomRange(customRange);
+              }}
+            >
+              <label className="date-field">
+                <span className="sr-only">自訂區間開始時間（美東）</span>
+                <input
+                  type="datetime-local"
+                  step="1"
+                  value={customRange.startAt}
+                  onChange={(event) => {
+                    setSelectedRange("custom");
+                    setCustomRange((current) => ({ ...current, startAt: event.target.value }));
+                  }}
+                />
+              </label>
               <span className="date-arrow">→</span>
-              <button type="button" className="date-field compact">5/24 9AM</button>
-              <button type="button" className="apply-button">套用</button>
-            </div>
+              <label className="date-field compact">
+                <span className="sr-only">自訂區間結束時間（美東）</span>
+                <input
+                  type="datetime-local"
+                  step="1"
+                  value={customRange.endAt}
+                  onChange={(event) => {
+                    setSelectedRange("custom");
+                    setCustomRange((current) => ({ ...current, endAt: event.target.value }));
+                  }}
+                />
+              </label>
+              <button type="submit" className="apply-button">套用</button>
+            </form>
           </section>
 
           <section className="chart-card">
             <div className="chart-card-header">
               <div>
                 <h2>發文量與累積趨勢</h2>
-                <p>柱狀代表單日發文量，折線代表累積發文量</p>
+                <p>柱狀代表{volumeLabel}，折線代表累積發文量</p>
               </div>
               <div className="legend" aria-hidden="true">
-                <span><i className="swatch daily" />當日發文量</span>
+                <span><i className="swatch daily" />{volumeLabel}</span>
                 <span><i className="swatch cumulative" />累積發文量</span>
               </div>
             </div>
-            <ActivityTrendChart activity={activity} labels={xLabels} />
+            <div className={`data-state ${activityState}`} role={activityState === "error" ? "alert" : "status"}>
+              {activityState === "loading" ? "正在同步後端資料源 / ELON_MUSK" : null}
+              {activityState === "ready" ? "後端資料源已連線 / ELON_MUSK" : null}
+              {activityState === "error" ? `後端資料源連線失敗：${activityError}` : null}
+            </div>
+            {activity ? <ActivityTrendChart activity={activity} labels={xLabels} /> : null}
           </section>
         </main>
       </div>
