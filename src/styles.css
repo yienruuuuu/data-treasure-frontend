@@ -581,39 +581,199 @@ button {
   margin-left: auto;
 }
 
+.date-picker-field {
+  position: relative;
+}
+
 .date-field {
   display: flex;
   align-items: center;
+  justify-content: center;
   min-width: 124px;
-  padding: 0;
+  padding: 0 12px;
 }
 
 .date-field.compact {
   min-width: 118px;
 }
 
-.date-field input {
-  width: 100%;
-  height: 100%;
-  min-width: 0;
-  padding: 0 12px;
-  border: 0;
-  background: transparent;
-  color: var(--bt-text-primary);
-  color-scheme: dark;
-  font-size: 15px;
-  font-weight: 800;
+.date-field span {
+  white-space: nowrap;
+}
+
+.date-field:hover,
+.date-field:focus-visible,
+.date-field[aria-expanded="true"] {
+  border-color: var(--bt-acid);
   outline: 0;
 }
 
-.date-field input::-webkit-calendar-picker-indicator {
-  opacity: 0.7;
-  cursor: pointer;
-  filter: invert(1);
+.date-picker-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 15;
+  display: grid;
+  grid-template-columns: minmax(250px, auto) 82px;
+  gap: 14px;
+  padding: 12px;
+  border: 1px solid var(--bt-border);
+  background: #050606;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.5);
 }
 
-.date-field:focus-within {
+.date-picker-popover .rdp-root {
+  --rdp-accent-color: var(--bt-acid);
+  --rdp-day_button-width: 32px;
+  --rdp-day_button-height: 30px;
+  --rdp-day-width: 32px;
+  --rdp-day-height: 30px;
+  color: var(--bt-text-primary);
+  font-size: 14px;
+}
+
+.date-picker-popover .rdp-month_caption {
+  min-height: 28px;
+  color: var(--bt-text-primary);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.date-picker-popover .rdp-nav {
+  display: flex;
+  gap: 6px;
+}
+
+.date-picker-popover .rdp-button_next,
+.date-picker-popover .rdp-button_previous {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--bt-border);
+  border-radius: 0;
+  background: var(--bt-bg-control);
+  color: #ffffff;
+  line-height: 1;
+}
+
+.date-picker-popover .rdp-chevron {
+  display: block;
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.date-picker-popover .rdp-weekday {
+  color: var(--bt-text-secondary);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.date-picker-popover .rdp-day_button {
+  border: 1px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--bt-text-primary);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.date-picker-popover .rdp-day_button:hover,
+.date-picker-popover .rdp-day_button:focus-visible {
+  border-color: var(--bt-border);
+  background: var(--bt-bg-control);
+  outline: 0;
+}
+
+.date-picker-popover .rdp-selected .rdp-day_button {
   border-color: var(--bt-acid);
+  background: var(--bt-acid);
+  color: var(--bt-text-inverse);
+}
+
+.date-picker-popover .rdp-outside .rdp-day_button {
+  color: var(--bt-text-muted);
+}
+
+.date-time-controls {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding-left: 12px;
+  border-left: 1px solid var(--bt-border-dim);
+}
+
+.time-stepper {
+  display: grid;
+  gap: 4px;
+  color: var(--bt-text-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.time-stepper-control {
+  display: grid;
+  grid-template-columns: 48px 18px;
+}
+
+.date-time-controls input {
+  width: 48px;
+  height: 34px;
+  border: 1px solid var(--bt-border);
+  border-right: 0;
+  border-radius: 0;
+  background: var(--bt-bg-control);
+  color: var(--bt-text-primary);
+  font-size: 15px;
+  font-weight: 800;
+  text-align: center;
+  outline: 0;
+}
+
+.date-time-controls input:focus {
+  border-color: var(--bt-acid);
+}
+
+.time-stepper-buttons {
+  display: grid;
+  grid-template-rows: 17px 17px;
+}
+
+.time-stepper-buttons button {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 17px;
+  padding: 0;
+  border: 1px solid var(--bt-border);
+  border-radius: 0;
+  background: #050606;
+  color: var(--bt-text-secondary);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+}
+
+.time-stepper-buttons button span {
+  display: block;
+  height: 12px;
+  line-height: 10px;
+}
+
+.time-stepper-buttons button + button {
+  border-top: 0;
+}
+
+.time-stepper-buttons button:hover,
+.time-stepper-buttons button:focus-visible {
+  border-color: var(--bt-acid);
+  color: var(--bt-acid);
+  outline: 0;
 }
 
 .date-arrow {

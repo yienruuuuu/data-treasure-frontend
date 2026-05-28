@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { DayPicker } from "react-day-picker";
+import { zhTW } from "react-day-picker/locale";
 import type { PolyTrackerActivityResponse, RangePreset, SidebarState } from "./types";
 import { getActivityTrend } from "./api/polyTrackerClient";
 import {
@@ -18,6 +20,9 @@ const rangeTabs: Array<{ id: RangePreset; label: string }> = [
   { id: "today", label: "今天" }
 ];
 
+type RangeEndpoint = "startAt" | "endAt";
+const MAX_ACTIVITY_RANGE_MS = 31 * 24 * 60 * 60 * 1000;
+
 function rangeWindowForPreset(range: Exclude<RangePreset, "custom">, now = new Date()) {
   const endAt = new Date(now);
   const startAt = new Date(endAt);
@@ -28,18 +33,33 @@ function rangeWindowForPreset(range: Exclude<RangePreset, "custom">, now = new D
   }
 
   if (range === "7d") {
-    startAt.setDate(startAt.getDate() - 7);
-    return { startAt, endAt, bucket: "day" as const };
+    return easternNoonTaskWindow(endAt, 7);
   }
 
   if (range === "30d") {
-    startAt.setDate(startAt.getDate() - 30);
-    return { startAt, endAt, bucket: "day" as const };
+    return easternNoonTaskWindow(endAt, 30);
   }
 
   const easternDate = formatDateTimeLocalValueInTimeZone(endAt, "America/New_York").slice(0, 10);
   const easternStart = parseDateTimeLocalInTimeZone(`${easternDate}T00:00:00`, "America/New_York");
   return { startAt: easternStart, endAt, bucket: "hour" as const };
+}
+
+function easternNoonTaskWindow(now: Date, days: number) {
+  const easternNow = formatDateTimeLocalValueInTimeZone(now, "America/New_York");
+  const { year, month, day, hour } = dateTimeParts(easternNow);
+  const anchorDate = new Date(Date.UTC(year, month - 1, day));
+
+  if (hour < 12) {
+    anchorDate.setUTCDate(anchorDate.getUTCDate() - 1);
+  }
+
+  const easternAnchorDate = `${pad4(anchorDate.getUTCFullYear())}-${pad2(anchorDate.getUTCMonth() + 1)}-${pad2(anchorDate.getUTCDate())}`;
+  const easternEndAt = parseDateTimeLocalInTimeZone(`${easternAnchorDate}T12:00:00`, "America/New_York");
+  const easternStartDate = new Date(easternEndAt);
+  easternStartDate.setUTCDate(easternStartDate.getUTCDate() - days);
+
+  return { startAt: easternStartDate, endAt: easternEndAt, bucket: "day" as const };
 }
 
 function defaultCustomWindow() {
@@ -56,6 +76,8 @@ function defaultCustomWindow() {
 function activityTrendRequestForCustomRange(startAtValue: string, endAtValue: string) {
   const startAt = parseDateTimeLocalInTimeZone(startAtValue, "America/New_York");
   const endAt = parseDateTimeLocalInTimeZone(endAtValue, "America/New_York");
+
+  validateActivityRange(startAt, endAt);
 
   return {
     startAt: startAt.toISOString(),
@@ -79,14 +101,79 @@ function activityTrendRequestForRange(range: RangePreset, customStartAt: string,
   }
 
   const window = rangeWindowForPreset(range);
+  validateActivityRange(window.startAt, window.endAt);
   return { startAt: window.startAt.toISOString(), endAt: window.endAt.toISOString(), bucket: window.bucket };
 }
+
+function validateActivityRange(startAt: Date, endAt: Date) {
+  const durationMs = endAt.getTime() - startAt.getTime();
+
+  if (durationMs <= 0) {
+    throw new Error("查詢起始時間必須早於結束時間");
+  }
+
+  if (durationMs > MAX_ACTIVITY_RANGE_MS) {
+    throw new Error("查詢區間不可超過 31 天，請縮短起訖時間");
+  }
+}
+
+function dateTimeParts(value: string) {
+  const [date = "", time = "00:00:00"] = value.split("T");
+  const [year = 0, month = 1, day = 1] = date.split("-").map(Number);
+  const [hour = 0, minute = 0, second = 0] = time.split(":").map(Number);
+
+  return { year, month, day, hour, minute, second };
+}
+
+function dateForPicker(value: string) {
+  const { year, month, day } = dateTimeParts(value);
+  return new Date(year, month - 1, day);
+}
+
+function setDatePart(value: string, date: Date) {
+  const { hour, minute, second } = dateTimeParts(value);
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}T${pad2(hour)}:${pad2(minute)}:${pad2(second)}`;
+}
+
+function setTimePart(value: string, part: TimePart, nextValue: string) {
+  const parsedValue = Number(nextValue);
+  const max = part === "hour" ? 23 : 59;
+  const normalizedValue = Number.isFinite(parsedValue) ? Math.min(max, Math.max(0, parsedValue)) : 0;
+  const parts = dateTimeParts(value);
+
+  return `${pad4(parts.year)}-${pad2(parts.month)}-${pad2(parts.day)}T${pad2(part === "hour" ? normalizedValue : parts.hour)}:${pad2(part === "minute" ? normalizedValue : parts.minute)}:${pad2(part === "second" ? normalizedValue : parts.second)}`;
+}
+
+function stepTimePart(value: string, part: TimePart, direction: 1 | -1) {
+  const parts = dateTimeParts(value);
+  const max = part === "hour" ? 23 : 59;
+  const currentValue = parts[part];
+  const nextValue = (currentValue + direction + max + 1) % (max + 1);
+
+  return setTimePart(value, part, String(nextValue));
+}
+
+function formatDateTimeControlValue(value: string) {
+  const { year, month, day, hour, minute, second } = dateTimeParts(value);
+  return `${pad4(year)}/${pad2(month)}/${pad2(day)} ${pad2(hour)}:${pad2(minute)}:${pad2(second)} ET`;
+}
+
+function pad2(value: number) {
+  return String(value).padStart(2, "0");
+}
+
+function pad4(value: number) {
+  return String(value).padStart(4, "0");
+}
+
+type TimePart = "hour" | "minute" | "second";
 
 export function App() {
   const [sidebar, setSidebar] = useState<SidebarState>("expanded");
   const [selectedRange, setSelectedRange] = useState<RangePreset>("custom");
   const [customRange, setCustomRange] = useState(defaultCustomWindow);
   const [appliedCustomRange, setAppliedCustomRange] = useState(defaultCustomWindow);
+  const [openRangePicker, setOpenRangePicker] = useState<RangeEndpoint | null>(null);
   const [activity, setActivity] = useState<PolyTrackerActivityResponse | null>(null);
   const [activityState, setActivityState] = useState<"loading" | "ready" | "error">("loading");
   const [activityError, setActivityError] = useState<string | null>(null);
@@ -104,7 +191,18 @@ export function App() {
     setActivityState("loading");
     setActivityError(null);
 
-    getActivityTrend(activityTrendRequestForRange(selectedRange, appliedCustomRange.startAt, appliedCustomRange.endAt))
+    let request: ReturnType<typeof activityTrendRequestForRange>;
+    try {
+      request = activityTrendRequestForRange(selectedRange, appliedCustomRange.startAt, appliedCustomRange.endAt);
+    } catch (error: unknown) {
+      setActivityState("error");
+      setActivityError(error instanceof Error ? error.message : "查詢條件錯誤");
+      return () => {
+        isActive = false;
+      };
+    }
+
+    getActivityTrend(request)
       .then((response) => {
         if (!isActive) {
           return;
@@ -171,6 +269,7 @@ export function App() {
                     setSelectedRange(tab.id);
                     if (tab.id !== "custom") {
                       setCustomRange(formatRangeInputValueForPreset(tab.id));
+                      setOpenRangePicker(null);
                     }
                   }}
                 >
@@ -186,31 +285,36 @@ export function App() {
                 setAppliedCustomRange(customRange);
               }}
             >
-              <label className="date-field">
-                <span className="sr-only">自訂區間開始時間（美東）</span>
-                <input
-                  type="datetime-local"
-                  step="1"
-                  value={customRange.startAt}
-                  onChange={(event) => {
-                    setSelectedRange("custom");
-                    setCustomRange((current) => ({ ...current, startAt: event.target.value }));
-                  }}
-                />
-              </label>
+              <DateTimeField
+                label="自訂區間開始時間（美東）"
+                value={customRange.startAt}
+                isOpen={openRangePicker === "startAt"}
+                onToggle={() => {
+                  setSelectedRange("custom");
+                  setOpenRangePicker((current) => current === "startAt" ? null : "startAt");
+                }}
+                onClose={() => setOpenRangePicker(null)}
+                onChange={(value) => {
+                  setSelectedRange("custom");
+                  setCustomRange((current) => ({ ...current, startAt: value }));
+                }}
+              />
               <span className="date-arrow">→</span>
-              <label className="date-field compact">
-                <span className="sr-only">自訂區間結束時間（美東）</span>
-                <input
-                  type="datetime-local"
-                  step="1"
-                  value={customRange.endAt}
-                  onChange={(event) => {
-                    setSelectedRange("custom");
-                    setCustomRange((current) => ({ ...current, endAt: event.target.value }));
-                  }}
-                />
-              </label>
+              <DateTimeField
+                label="自訂區間結束時間（美東）"
+                value={customRange.endAt}
+                isOpen={openRangePicker === "endAt"}
+                compact
+                onToggle={() => {
+                  setSelectedRange("custom");
+                  setOpenRangePicker((current) => current === "endAt" ? null : "endAt");
+                }}
+                onClose={() => setOpenRangePicker(null)}
+                onChange={(value) => {
+                  setSelectedRange("custom");
+                  setCustomRange((current) => ({ ...current, endAt: value }));
+                }}
+              />
               <button type="submit" className="apply-button">套用</button>
             </form>
           </section>
@@ -229,13 +333,178 @@ export function App() {
             <div className={`data-state ${activityState}`} role={activityState === "error" ? "alert" : "status"}>
               {activityState === "loading" ? "正在同步後端資料源 / ELON_MUSK" : null}
               {activityState === "ready" ? "後端資料源已連線 / ELON_MUSK" : null}
-              {activityState === "error" ? `後端資料源連線失敗：${activityError}` : null}
+              {activityState === "error" ? `查詢條件錯誤：${activityError}` : null}
             </div>
             {activity ? <ActivityTrendChart activity={activity} labels={xLabels} /> : null}
           </section>
         </main>
       </div>
     </div>
+  );
+}
+
+type DateTimeFieldProps = {
+  label: string;
+  value: string;
+  isOpen: boolean;
+  compact?: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+  onChange: (value: string) => void;
+};
+
+function DateTimeField({ label, value, isOpen, compact = false, onToggle, onClose, onChange }: DateTimeFieldProps) {
+  const pickerRef = useRef<HTMLDivElement | null>(null);
+  const parts = dateTimeParts(value);
+  const [timeDraft, setTimeDraft] = useState(() => ({
+    hour: pad2(parts.hour),
+    minute: pad2(parts.minute),
+    second: pad2(parts.second)
+  }));
+
+  useEffect(() => {
+    const nextParts = dateTimeParts(value);
+    setTimeDraft({
+      hour: pad2(nextParts.hour),
+      minute: pad2(nextParts.minute),
+      second: pad2(nextParts.second)
+    });
+  }, [value]);
+
+  const commitTimeDraft = (part: TimePart) => {
+    const nextValue = timeDraft[part] === "" ? "0" : timeDraft[part];
+    onChange(setTimePart(value, part, nextValue));
+  };
+
+  const updateTimeDraft = (part: TimePart, nextValue: string) => {
+    setTimeDraft((current) => ({ ...current, [part]: nextValue.replace(/\D/g, "").slice(0, 2) }));
+  };
+
+  const stepTimeDraft = (part: TimePart, direction: 1 | -1) => {
+    const committedValue = setTimePart(value, part, timeDraft[part] === "" ? "0" : timeDraft[part]);
+    onChange(stepTimePart(committedValue, part, direction));
+  };
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (pickerRef.current?.contains(event.target as Node)) {
+        return;
+      }
+      onClose();
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
+  return (
+    <div className="date-picker-field" ref={pickerRef}>
+      <button
+        type="button"
+        className={compact ? "date-field compact" : "date-field"}
+        aria-expanded={isOpen}
+        aria-label={label}
+        onClick={onToggle}
+      >
+        <span>{formatDateTimeControlValue(value)}</span>
+      </button>
+      {isOpen ? (
+        <div className="date-picker-popover">
+          <DayPicker
+            mode="single"
+            selected={dateForPicker(value)}
+            onSelect={(date) => {
+              if (date) {
+                onChange(setDatePart(value, date));
+              }
+            }}
+            locale={zhTW}
+            weekStartsOn={1}
+          />
+          <div className="date-time-controls" aria-label={`${label}時間`}>
+            <TimeStepper
+              label="HH"
+              value={timeDraft.hour}
+              onChange={(nextValue) => updateTimeDraft("hour", nextValue)}
+              onCommit={() => commitTimeDraft("hour")}
+              onStep={(direction) => stepTimeDraft("hour", direction)}
+            />
+            <TimeStepper
+              label="MM"
+              value={timeDraft.minute}
+              onChange={(nextValue) => updateTimeDraft("minute", nextValue)}
+              onCommit={() => commitTimeDraft("minute")}
+              onStep={(direction) => stepTimeDraft("minute", direction)}
+            />
+            <TimeStepper
+              label="SS"
+              value={timeDraft.second}
+              onChange={(nextValue) => updateTimeDraft("second", nextValue)}
+              onCommit={() => commitTimeDraft("second")}
+              onStep={(direction) => stepTimeDraft("second", direction)}
+            />
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+type TimeStepperProps = {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  onCommit: () => void;
+  onStep: (direction: 1 | -1) => void;
+};
+
+function TimeStepper({ label, value, onChange, onCommit, onStep }: TimeStepperProps) {
+  return (
+    <label className="time-stepper">
+      <span>{label}</span>
+      <div className="time-stepper-control">
+        <input
+          inputMode="numeric"
+          maxLength={2}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          onBlur={onCommit}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              onCommit();
+            }
+            if (event.key === "ArrowUp") {
+              event.preventDefault();
+              onStep(1);
+            }
+            if (event.key === "ArrowDown") {
+              event.preventDefault();
+              onStep(-1);
+            }
+          }}
+        />
+        <div className="time-stepper-buttons" aria-hidden="false">
+          <button type="button" aria-label={`${label} 加一`} onMouseDown={(event) => event.preventDefault()} onClick={() => onStep(1)}><span>⌃</span></button>
+          <button type="button" aria-label={`${label} 減一`} onMouseDown={(event) => event.preventDefault()} onClick={() => onStep(-1)}><span>⌄</span></button>
+        </div>
+      </div>
+    </label>
   );
 }
 

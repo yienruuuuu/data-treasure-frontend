@@ -19,6 +19,7 @@
 - TypeScript
 - Vite 6
 - ECharts 5
+- React DayPicker 10
 - 純 CSS，未使用 UI framework
 
 常用命令：
@@ -40,7 +41,8 @@ npm run preview
 - `src/App.tsx`
   - 目前主要 UI 都集中在這裡。
   - 包含 `TopNav`、`Sidebar`、`SidebarSection`、`TimePanel`、toolbar、dashboard header。
-  - 管理 sidebar 展開/收合、range tab、現在時間、美東時間 override、自選時區等狀態。
+  - 管理 sidebar 展開/收合、range tab、現在時間、美東時間 override、自選時區、自訂區間 picker 等狀態。
+  - 自訂區間日期選擇使用 React DayPicker，時間欄位由前端自製。
 
 - `src/components/ActivityTrendChart.tsx`
   - ECharts 圖表元件。
@@ -93,11 +95,17 @@ npm run preview
   - `7d`
   - `30d`
   - `today`
+  - `7d` / `30d` 使用美東時間 12:00 PM 對齊的任務日區間，符合市場題目常見的 noon-to-noon 定義。
 
 - 時間面板：
   - 美東時間預設即時更新。
   - 可指定美東時間 override。
   - 自選時區會用同一個 `easternDisplayDate` 顯示不同 time zone。
+
+- 自訂區間：
+  - 使用 React DayPicker popover 選日期。
+  - 時間欄位保留 `HH/MM/SS` 自製輸入。
+  - UI 顯示為美東時間，送 API 前轉成 UTC ISO string。
 
 ## 已知限制與改善方向
 

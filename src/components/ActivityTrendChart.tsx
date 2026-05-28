@@ -164,7 +164,7 @@ export function ActivityTrendChart({ activity, labels }: ActivityTrendChartProps
           name: volumeLabel,
           type: "bar",
           data: daily,
-          barWidth: 22,
+          barMaxWidth: activity.range.bucket === "day" ? 22 : 8,
           itemStyle: {
             color: "#20d89b",
             borderColor: "#d7ffe8",
